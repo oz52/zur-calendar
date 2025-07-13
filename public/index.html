@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Zur Calendar</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #fff; color: #000; transition: 0.2s; }
+    .dark { background: #121212; color: #eee; }
+    .appt { border: 1px solid #ccc; padding: 8px; margin: 10px 0; border-radius: 5px; }
+    button { margin-top: 4px; }
+    label { display: block; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Zur Family Calendar</h1>
+  <button onclick="toggleDark()">🌙 Toggle Dark Mode</button>
+  <button onclick="exportIcal()">📤 Export iCal</button>
+  <button onclick="window.print()">🖨️ Export to PDF</button>
+  <form id="form">
+    <label>Name <input id="name" required></label>
+    <label>Meeting With <input id="with" required></label>
+    <label>Location <input id="loc"></label>
+    <label>Date <input type="date" id="date" required></label>
+    <label>Time <input type="time" id="time" required></label>
+    <label>Duration <input id="dur"></label>
+    <label>Notes <textarea id="notes"></textarea></label>
+    <button type="submit">Save</button>
+  </form>
+  <div id="list"></div>
+  <script>
+    const $ = id => document.getElementById(id);
+    const form = $('form');
+    let editing = null;
+
+    form.onsubmit = async e => {
+      e.preventDefault();
+      const data = {
+        familyMember: $('name').value,
+        meetingWith: $('with').value,
+        location: $('loc').value,
+        date: $('date').value,
+        time: $('time').value,
+        duration: $('dur').value,
+        notes: $('notes').value
+      };
+      const method = editing ? 'PUT' : 'POST';
+      const url = editing ? '/appointments/' + editing : '/appointments';
+      await fetch(url, {
+        method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+      });
+      editing = null;
+      form.reset();
+      load();
+    };
+
+    async function load() {
+      const res = await fetch('/appointments');
+      const appts = await res.json();
+      const list = $('list');
+      list.innerHTML = '';
+      appts.forEach(a => {
+        const div = document.createElement('div');
+        div.className = 'appt';
+        div.innerHTML = `
+          <b>${a.familyMember}</b> with ${a.meetingWith} on ${a.date} at ${a.time} (${a.duration})<br>
+          ${a.location ? '📍 ' + a.location + '<br>' : ''}
+          ${a.notes}<br>
+          <button onclick="edit(${a.id})">Edit</button>
+          <button onclick="del(${a.id})">Delete</button>`;
+        list.appendChild(div);
+      });
+    }
+
+    async function del(id) {
+      await fetch('/appointments/' + id, { method: 'DELETE' });
+      load();
+    }
+
+    async function edit(id) {
+      const res = await fetch('/appointments');
+      const appts = await res.json();
+      const a = appts.find(x => x.id === id);
+      $('name').value = a.familyMember;
+      $('with').value = a.meetingWith;
+      $('loc').value = a.location;
+      $('date').value = a.date;
+      $('time').value = a.time;
+      $('dur').value = a.duration;
+      $('notes').value = a.notes;
+      editing = id;
+    }
+
+    function toggleDark() {
+      document.body.classList.toggle('dark');
+    }
+
+    function exportIcal() {
+      window.open('/export/ical', '_blank');
+    }
+
+    load();
+  </script>
+</body>
+</html>
