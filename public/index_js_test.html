@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Zur Calendar - JS Test</title>
+</head>
+<body>
+  <button class="add-appointment">Add Appointment</button>
+
+  <script>
+    alert("JS is working");
+    console.log("✅ JS loaded");
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.querySelector(".add-appointment")?.addEventListener("click", () => {
+        alert("You clicked the Add Appointment button!");
+      });
+    });
+  </script>
+</body>
+</html>
